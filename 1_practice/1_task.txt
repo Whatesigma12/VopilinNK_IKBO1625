@@ -1,0 +1,23 @@
+grep -o '^[^:]*' /etc/passwd | sort
+
+выведеные данные:
+bin
+cron
+daemon
+dhcpcd
+ftp
+games
+guest
+halt
+klogd
+lp
+mail
+news
+nobody
+ntp
+root
+shutdown
+sshd
+svn
+sync
+uucp
