@@ -1,25 +1,6 @@
-решение: 
-
-
-терминал:
 nano banner
 
-
-nano:
-#!/bin/bash
-
-text="$1"
-len=$((${#text} + 2))
-border=$(printf '%*s' "$len" '' | tr ' ' '-')
-
-echo "+${border}+"
-echo "| ${text} |"
-echo "+${border}+"
-
-
-терминал: 
 ./banner "Hello from RTU MIREA!"
-
 
 выходные данные:
 +-----------------------+
