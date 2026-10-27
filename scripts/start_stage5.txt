@@ -1,0 +1,9 @@
+ls -l
+touch new_file.txt
+chmod 777 new_file.txt
+ls -l
+chmod 999 new_file.txt
+chmod 755 missing.txt
+touch /no_such_dir/file.txt
+date
+head -n 1 file1.txt
