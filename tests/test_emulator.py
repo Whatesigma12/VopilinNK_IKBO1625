@@ -30,12 +30,29 @@ class TestShellEmulator(unittest.TestCase):
         err = exec_cd(self.vfs, ["/nonexistent"])
         self.assertIn("Ошибка", err)
 
+    def test_ls_flags(self):
+        """Проверка одиночных и объединённых флагов ls."""
+        out = exec_ls(self.vfs, ["-la"])
+        self.assertIn("file1.txt", out)
+        self.assertIn("644 file1.txt", out)
+        err = exec_ls(self.vfs, ["-z"])
+        self.assertIn("Ошибка", err)
+
     def test_head_and_date(self):
         """Проверка команд head и date."""
         out = exec_head(self.vfs, ["-n", "1", "file1.txt"])
         self.assertEqual(out.strip(), "Line 1")
         date_out = exec_date([])
         self.assertTrue(len(date_out.strip()) > 0)
+
+    def test_head_rejects_non_positive_count(self):
+        """Проверка отклонения нулевого и отрицательного количества."""
+        for count in ("0", "-1"):
+            with self.subTest(count=count):
+                out = exec_head(
+                    self.vfs, ["-n", count, "file1.txt"]
+                )
+                self.assertIn("положительным", out)
 
     def test_touch_and_chmod_in_memory(self):
         """Проверка модификации VFS в памяти командами touch и chmod."""
