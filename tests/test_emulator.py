@@ -12,7 +12,7 @@ from commands import (
     exec_ls,
     exec_touch,
 )
-from vfs import VFS
+from vfs import VFS, VFSNode
 
 
 class TestShellEmulator(unittest.TestCase):
@@ -32,9 +32,19 @@ class TestShellEmulator(unittest.TestCase):
 
     def test_ls_flags(self):
         """Проверка одиночных и объединённых флагов ls."""
-        out = exec_ls(self.vfs, ["-la"])
-        self.assertIn("file1.txt", out)
-        self.assertIn("644 file1.txt", out)
+        self.vfs.root.children[".secret"] = VFSNode(
+            ".secret", is_dir=False, content=""
+        )
+        regular = exec_ls(self.vfs, [])
+        self.assertNotIn(".secret", regular)
+
+        all_items = exec_ls(self.vfs, ["-a"])
+        self.assertIn(".secret", all_items)
+
+        long_all = exec_ls(self.vfs, ["-la"])
+        self.assertIn("644 file1.txt", long_all)
+        self.assertIn("644 .secret", long_all)
+
         err = exec_ls(self.vfs, ["-z"])
         self.assertIn("Ошибка", err)
 
