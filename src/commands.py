@@ -10,27 +10,35 @@ THREE_ARGS = 3
 DEFAULT_HEAD_LINES = 10
 MODE_LEN = 3
 OCTAL_CHARS = "01234567"
+LS_FLAGS = {"-l", "-a", "-la", "-al"}
 
 
 def exec_ls(vfs, args):
-    """Вывод содержимого директории (поддержка флага -l)."""
-    long_fmt = "-l" in args
-    paths = [a for a in args if a != "-l"]
+    """Вывод содержимого директории с поддержкой флагов -l и -a."""
+    flags = [arg for arg in args if arg.startswith("-")]
+    paths = [arg for arg in args if not arg.startswith("-")]
+    if any(flag not in LS_FLAGS for flag in flags):
+        return "Ошибка ls: неизвестный флаг\n"
     if len(paths) > ONE_ARG:
         return "Ошибка ls: слишком много аргументов\n"
+
+    long_fmt = any("l" in flag[1:] for flag in flags)
+    show_all = any("a" in flag[1:] for flag in flags)
     target = paths[0] if paths else vfs.cwd
     node = vfs.get_node(target)
     if not node:
         return f"Ошибка ls: '{target}' не найден\n"
     if not node.is_dir:
         return f"{node.mode} {node.name}\n" if long_fmt else f"{node.name}\n"
-    return _format_dir_children(node, long_fmt)
+    return _format_dir_children(node, long_fmt, show_all)
 
 
-def _format_dir_children(node, long_fmt):
+def _format_dir_children(node, long_fmt, show_all):
     """Форматирование списка элементов папки."""
     lines = []
     for name, child in sorted(node.children.items()):
+        if name.startswith(".") and not show_all:
+            continue
         suffix = "/" if child.is_dir else ""
         if long_fmt:
             lines.append(f"{child.mode} {name}{suffix}")
@@ -81,7 +89,7 @@ def _parse_head_args(args):
     if len(args) == ONE_ARG:
         return DEFAULT_HEAD_LINES, args[0]
     if len(args) == THREE_ARGS and args[0] == "-n":
-        if not args[1].isdigit():
+        if not args[1].isdigit() or int(args[1]) <= EMPTY_COUNT:
             return "Ошибка head: число строк должно быть положительным числом\n"
         return int(args[1]), args[2]
     return "Ошибка head: неверные аргументы\n"
