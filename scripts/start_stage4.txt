@@ -1,0 +1,8 @@
+date
+ls
+ls -l
+head file1.txt
+head -n 2 file1.txt
+head missing.txt
+cd /
+cd unknown_dir
