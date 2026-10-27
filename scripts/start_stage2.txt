@@ -1,0 +1,4 @@
+ls -la
+unknown_command
+cd /home
+exit extra_arg
