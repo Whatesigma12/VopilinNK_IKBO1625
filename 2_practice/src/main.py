@@ -3,6 +3,7 @@
 from config import parse_config
 from graph_builder import build_npm_graph
 from npm_client import NpmClientError
+from reverse_dependencies import find_reverse_dependencies
 from test_repository import (
     TestRepositoryError,
     build_test_graph,
@@ -31,6 +32,27 @@ def print_graph(graph):
         )
 
 
+def print_reverse_dependencies(
+    package,
+    dependencies
+):
+    """Вывести обратные зависимости."""
+
+    print()
+    print(
+        f"Обратные зависимости пакета {package}:"
+    )
+
+    if not dependencies:
+        print("Нет обратных зависимостей")
+        return
+
+    for dependency in dependencies:
+        print(
+            f"- {dependency}"
+        )
+
+
 def run_test_mode(config):
     """Запустить программу с тестовым репозиторием."""
 
@@ -38,6 +60,7 @@ def run_test_mode(config):
         config.repository
     )
 
+    # Сначала строим обычный граф пакета.
     graph = build_test_graph(
         repository,
         config.package,
@@ -45,6 +68,19 @@ def run_test_mode(config):
     )
 
     print_graph(graph)
+
+    # Затем ищем пакеты, которые зависят
+    # от указанного пользователем пакета.
+    reverse = find_reverse_dependencies(
+        repository,
+        config.package,
+        config.max_depth
+    )
+
+    print_reverse_dependencies(
+        config.package,
+        reverse
+    )
 
 
 def run_npm_mode(config):
@@ -78,6 +114,7 @@ def main():
             run_test_mode(config)
         else:
             run_npm_mode(config)
+
     except (
         NpmClientError,
         TestRepositoryError
@@ -85,6 +122,7 @@ def main():
         print(
             f"Ошибка: {error}"
         )
+
         return 1
 
     return 0
