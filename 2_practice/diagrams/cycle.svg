@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="480" viewBox="0 0 960 480">
+  <defs>
+    <linearGradient id="nodeGradient" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#e8f0ff"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M 0 0 L 10 4 L 0 8 z" fill="#365f9d"/>
+    </marker>
+  </defs>
+  <style>
+    .background { fill: #f7f9fc; }
+    .edge { fill: none; stroke: #365f9d; stroke-width: 2; marker-end: url(#arrow); }
+    .node rect { fill: url(#nodeGradient); stroke: #2f5597; stroke-width: 2; }
+    .node text { fill: #17365d; font-family: Arial, sans-serif; font-size: 18px; font-weight: 700; text-anchor: middle; dominant-baseline: middle; }
+    .title { fill: #17365d; font-family: Arial, sans-serif; font-size: 24px; font-weight: 700; text-anchor: middle; }
+  </style>
+  <rect class="background" x="0" y="0" width="960" height="480"/>
+  <text class="title" x="480" y="38">cycle.json — циклическая зависимость</text>
+  <path class="edge" d="M 480 118 C 480 165, 480 165, 480 212" />
+  <path class="edge" d="M 480 268 C 480 315, 480 315, 480 362" />
+  <path class="edge" d="M 405 390 C 335 390, 335 90, 405 90" />
+  <g class="node">
+    <rect x="405" y="62" width="150" height="56" rx="14" />
+    <text x="480" y="90">A</text>
+  </g>
+  <g class="node">
+    <rect x="405" y="212" width="150" height="56" rx="14" />
+    <text x="480" y="240">B</text>
+  </g>
+  <g class="node">
+    <rect x="405" y="362" width="150" height="56" rx="14" />
+    <text x="480" y="390">C</text>
+  </g>
+</svg>

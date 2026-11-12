@@ -24,6 +24,10 @@ Python 3.12.
 4. Поиск обратных зависимостей.
 5. Формирование графа в формате Mermaid.
 
+Дополнительно реализована генерация автономных SVG-изображений
+для тестовых JSON-графов. Эти файлы можно открыть напрямую
+в браузере и показать на защите без Mermaid Live Editor.
+
 ## Структура проекта
 
 ```text
@@ -37,7 +41,9 @@ Python 3.12.
 │   ├── graph_builder.py
 │   ├── test_repository.py
 │   ├── reverse_dependencies.py
-│   └── mermaid.py
+│   ├── mermaid.py
+│   ├── svg_renderer.py
+│   └── generate_diagrams.py
 │
 ├── tests/
 │   ├── test_config.py
@@ -45,13 +51,20 @@ Python 3.12.
 │   ├── test_graph_builder.py
 │   ├── test_semver.py
 │   ├── test_reverse_dependencies.py
-│   └── test_mermaid.py
+│   ├── test_mermaid.py
+│   └── test_svg_renderer.py
 │
 ├── test_data/
 │   ├── simple.json
 │   ├── cycle.json
 │   ├── depth.json
 │   └── reverse.json
+│
+├── diagrams/
+│   ├── simple.svg
+│   ├── cycle.svg
+│   ├── depth.svg
+│   └── reverse.svg
 │
 ├── README.md
 └── run.bat
@@ -203,30 +216,72 @@ graph TD
 Функция `graph_to_mermaid()` создаёт идентификаторы вершин,
 подписи и связи.
 
-## Тестовый пример Mermaid
+## SVG-визуализация
 
-Запуск:
+Для защиты дополнительно добавлена генерация готовых SVG-файлов.
+
+Команда:
 
 ```bat
-python src\main.py --package A --repository test_data\simple.json --test-mode --version 1.0.0 --max-depth 3
+python src\generate_diagrams.py
 ```
 
-Пример:
+создаёт или обновляет:
 
 ```text
-Описание графа Mermaid:
-
-graph TD
-    n0["A"]
-    n1["B"]
-    n2["C"]
-    n3["D"]
-    n4["E"]
-    n0 --> n1
-    n0 --> n2
-    n1 --> n3
-    n2 --> n4
+diagrams\simple.svg
+diagrams\cycle.svg
+diagrams\depth.svg
+diagrams\reverse.svg
 ```
+
+SVG-файлы являются обычными векторными изображениями. Их можно
+открыть двойным щелчком в Chrome, Edge или другом браузере.
+
+Генерация SVG не заменяет обязательный Mermaid-вывод. Mermaid
+остаётся результатом пятого этапа, а SVG используется как удобное
+наглядное представление того же графа.
+
+### simple.json
+
+Обычный разветвлённый граф:
+
+```text
+A -> B -> D
+A -> C -> E
+```
+
+Готовое изображение:
+[diagrams/simple.svg](diagrams/simple.svg)
+
+### cycle.json
+
+Граф с циклом:
+
+```text
+A -> B -> C -> A
+```
+
+Готовое изображение:
+[diagrams/cycle.svg](diagrams/cycle.svg)
+
+### depth.json
+
+Цепочка для демонстрации ограничения глубины:
+
+```text
+A -> B -> C -> D -> E
+```
+
+Готовое изображение:
+[diagrams/depth.svg](diagrams/depth.svg)
+
+### reverse.json
+
+Граф для проверки обратных зависимостей.
+
+Готовое изображение:
+[diagrams/reverse.svg](diagrams/reverse.svg)
 
 ## Визуализация трёх npm-пакетов
 
@@ -306,6 +361,15 @@ npm показывает дерево фактически разрешённы�
 
 Преобразует граф зависимостей в описание Mermaid.
 
+### `svg_renderer.py`
+
+Формирует автономное SVG-изображение графа без сторонних
+библиотек.
+
+### `generate_diagrams.py`
+
+Генерирует SVG для всех тестовых JSON-файлов.
+
 ### `main.py`
 
 Запускает необходимый режим программы и выводит результат.
@@ -332,6 +396,23 @@ OK
 run.bat --package express --repository https://registry.npmjs.org --version 4.18.2 --max-depth 1
 ```
 
+## Что показать на защите
+
+Рекомендуемый порядок:
+
+1. Запустить `simple.json` и показать Mermaid-вывод.
+2. Открыть `diagrams\simple.svg` в браузере.
+3. Открыть `cycle.svg` и объяснить обработку цикла.
+4. Открыть `depth.svg` и объяснить `--max-depth`.
+5. Открыть `reverse.svg` и объяснить обратные зависимости.
+
+Если преподаватель спрашивает, откуда берётся SVG:
+
+> Программа строит тот же граф зависимостей и дополнительно
+> формирует автономное векторное SVG-представление. Mermaid остаётся
+> обязательным текстовым представлением пятого этапа, а SVG нужен
+> для наглядного просмотра графа в браузере.
+
 ## Итог
 
 В работе реализован инструмент анализа зависимостей
@@ -349,4 +430,5 @@ npm-пакетов без использования готовых средст
 - обработку циклов;
 - тестовый репозиторий;
 - обратные зависимости;
-- Mermaid-визуализацию.
+- Mermaid-визуализацию;
+- генерацию автономных SVG-диаграмм.

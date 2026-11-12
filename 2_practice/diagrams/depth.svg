@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="700" viewBox="0 0 960 700">
+  <defs>
+    <linearGradient id="nodeGradient" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#e8f0ff"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M 0 0 L 10 4 L 0 8 z" fill="#365f9d"/>
+    </marker>
+  </defs>
+  <style>
+    .background { fill: #f7f9fc; }
+    .edge { fill: none; stroke: #365f9d; stroke-width: 2; marker-end: url(#arrow); }
+    .node rect { fill: url(#nodeGradient); stroke: #2f5597; stroke-width: 2; }
+    .node text { fill: #17365d; font-family: Arial, sans-serif; font-size: 18px; font-weight: 700; text-anchor: middle; dominant-baseline: middle; }
+    .title { fill: #17365d; font-family: Arial, sans-serif; font-size: 24px; font-weight: 700; text-anchor: middle; }
+  </style>
+  <rect class="background" x="0" y="0" width="960" height="700"/>
+  <text class="title" x="480" y="38">depth.json — цепочка для проверки глубины</text>
+  <path class="edge" d="M 480 118 C 480 155, 480 155, 480 192" />
+  <path class="edge" d="M 480 248 C 480 285, 480 285, 480 322" />
+  <path class="edge" d="M 480 378 C 480 415, 480 415, 480 452" />
+  <path class="edge" d="M 480 508 C 480 545, 480 545, 480 582" />
+  <g class="node">
+    <rect x="405" y="62" width="150" height="56" rx="14" />
+    <text x="480" y="90">A</text>
+  </g>
+  <g class="node">
+    <rect x="405" y="192" width="150" height="56" rx="14" />
+    <text x="480" y="220">B</text>
+  </g>
+  <g class="node">
+    <rect x="405" y="322" width="150" height="56" rx="14" />
+    <text x="480" y="350">C</text>
+  </g>
+  <g class="node">
+    <rect x="405" y="452" width="150" height="56" rx="14" />
+    <text x="480" y="480">D</text>
+  </g>
+  <g class="node">
+    <rect x="405" y="582" width="150" height="56" rx="14" />
+    <text x="480" y="610">E</text>
+  </g>
+</svg>

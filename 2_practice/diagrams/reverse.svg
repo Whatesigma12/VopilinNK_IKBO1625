@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="480" viewBox="0 0 960 480">
+  <defs>
+    <linearGradient id="nodeGradient" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#e8f0ff"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+      <path d="M 0 0 L 10 4 L 0 8 z" fill="#365f9d"/>
+    </marker>
+  </defs>
+  <style>
+    .background { fill: #f7f9fc; }
+    .edge { fill: none; stroke: #365f9d; stroke-width: 2; marker-end: url(#arrow); }
+    .node rect { fill: url(#nodeGradient); stroke: #2f5597; stroke-width: 2; }
+    .node text { fill: #17365d; font-family: Arial, sans-serif; font-size: 18px; font-weight: 700; text-anchor: middle; dominant-baseline: middle; }
+    .title { fill: #17365d; font-family: Arial, sans-serif; font-size: 24px; font-weight: 700; text-anchor: middle; }
+  </style>
+  <rect class="background" x="0" y="0" width="960" height="480"/>
+  <text class="title" x="480" y="38">reverse.json — граф для обратных зависимостей</text>
+  <path class="edge" d="M 330 118 C 330 165, 360 165, 360 212" />
+  <path class="edge" d="M 330 118 C 330 165, 600 165, 600 212" />
+  <path class="edge" d="M 360 268 C 360 315, 480 315, 480 362" />
+  <path class="edge" d="M 600 268 C 600 315, 480 315, 480 362" />
+  <path class="edge" d="M 630 118 C 630 165, 360 165, 360 212" />
+  <g class="node">
+    <rect x="255" y="62" width="150" height="56" rx="14" />
+    <text x="330" y="90">A</text>
+  </g>
+  <g class="node">
+    <rect x="555" y="62" width="150" height="56" rx="14" />
+    <text x="630" y="90">E</text>
+  </g>
+  <g class="node">
+    <rect x="735" y="62" width="150" height="56" rx="14" />
+    <text x="810" y="90">F</text>
+  </g>
+  <g class="node">
+    <rect x="285" y="212" width="150" height="56" rx="14" />
+    <text x="360" y="240">B</text>
+  </g>
+  <g class="node">
+    <rect x="525" y="212" width="150" height="56" rx="14" />
+    <text x="600" y="240">C</text>
+  </g>
+  <g class="node">
+    <rect x="405" y="362" width="150" height="56" rx="14" />
+    <text x="480" y="390">D</text>
+  </g>
+</svg>
