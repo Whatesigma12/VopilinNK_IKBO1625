@@ -1,20 +1,65 @@
-
 from config import parse_config
+from npm_client import NpmClientError, get_dependencies
 
 
 def main():
-    # Получаем уже проверенные настройки.
+
+    # Получаем параметры командной строки.
     config = parse_config()
 
-    # На первом этапе просто показываем их пользователю.
     print("=== Анализатор зависимостей npm ===")
-    print(f"package: {config.package}")
-    print(f"repository: {config.repository}")
-    print(f"test_mode: {config.test_mode}")
-    print(f"version: {config.version}")
-    print(f"max_depth: {config.max_depth}")
+
+    print(f"Пакет: {config.package}")
+    print(f"Версия: {config.version}")
+    print(f"Репозиторий: {config.repository}")
+    print(f"Максимальная глубина: {config.max_depth}")
+
+    # На втором этапе обычный режим уже
+    # получает реальные зависимости из npm.
+    if not config.test_mode:
+
+        try:
+
+            dependencies = get_dependencies(
+                config.repository,
+                config.package,
+                config.version
+            )
+
+        except NpmClientError as error:
+
+            print()
+            print(f"Ошибка: {error}")
+
+            return 1
+
+        print()
+        print("Прямые зависимости:")
+
+        # Если зависимостей нет.
+        if not dependencies:
+
+            print("Нет зависимостей")
+
+            return 0
+
+        # Сортируем зависимости по имени,
+        # чтобы вывод всегда был одинаковым.
+        for name in sorted(dependencies):
+
+            version = dependencies[name]
+
+            print(
+                f"- {name}: {version}"
+            )
+
+    else:
+
+        print()
+        print("Тестовый режим будет реализован на следующих этапах.")
+
+    return 0
 
 
-# Выполняем main только при прямом запуске файла.
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
