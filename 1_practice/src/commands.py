@@ -1,6 +1,7 @@
 """Модуль реализации команд оболочки."""
 
 from datetime import datetime
+
 from vfs import VFSNode
 
 EMPTY_COUNT = 0
@@ -13,42 +14,70 @@ OCTAL_CHARS = "01234567"
 LS_FLAGS = {"-l", "-a", "-la", "-al"}
 
 
-def exec_ls(vfs, args):
-    """Вывод содержимого директории с поддержкой флагов -l и -a."""
+def _split_ls_args(args):
+    """Разделить аргументы ls на флаги и пути."""
     flags = [arg for arg in args if arg.startswith("-")]
     paths = [arg for arg in args if not arg.startswith("-")]
+    return flags, paths
+
+
+def _validate_ls_args(flags, paths):
+    """Проверить аргументы команды ls."""
     if any(flag not in LS_FLAGS for flag in flags):
         return "Ошибка ls: неизвестный флаг\n"
     if len(paths) > ONE_ARG:
         return "Ошибка ls: слишком много аргументов\n"
+    return None
 
-    long_fmt = any("l" in flag[1:] for flag in flags)
+
+def _format_file(node, long_format):
+    """Сформировать строку для одного файла."""
+    if long_format:
+        return f"{node.mode} {node.name}\n"
+    return f"{node.name}\n"
+
+
+def exec_ls(vfs, args):
+    """Вывести содержимое директории с флагами -l и -a."""
+    flags, paths = _split_ls_args(args)
+    error = _validate_ls_args(flags, paths)
+    if error:
+        return error
+
+    long_format = any("l" in flag[1:] for flag in flags)
     show_all = any("a" in flag[1:] for flag in flags)
     target = paths[0] if paths else vfs.cwd
     node = vfs.get_node(target)
+
     if not node:
         return f"Ошибка ls: '{target}' не найден\n"
     if not node.is_dir:
-        return f"{node.mode} {node.name}\n" if long_fmt else f"{node.name}\n"
-    return _format_dir_children(node, long_fmt, show_all)
+        return _format_file(node, long_format)
+    return _format_dir_children(node, long_format, show_all)
 
 
-def _format_dir_children(node, long_fmt, show_all):
-    """Форматирование списка элементов папки."""
+def _format_dir_children(node, long_format, show_all):
+    """Сформировать список элементов директории."""
     lines = []
     for name, child in sorted(node.children.items()):
-        if name.startswith(".") and not show_all:
-            continue
-        suffix = "/" if child.is_dir else ""
-        if long_fmt:
-            lines.append(f"{child.mode} {name}{suffix}")
-        else:
-            lines.append(f"{name}{suffix}")
+        line = _format_child(name, child, long_format, show_all)
+        if line is not None:
+            lines.append(line)
     return "\n".join(lines) + ("\n" if lines else "")
 
 
+def _format_child(name, child, long_format, show_all):
+    """Сформировать строку для дочернего элемента."""
+    if name.startswith(".") and not show_all:
+        return None
+    suffix = "/" if child.is_dir else ""
+    if long_format:
+        return f"{child.mode} {name}{suffix}"
+    return f"{name}{suffix}"
+
+
 def exec_cd(vfs, args):
-    """Смена текущей директории VFS."""
+    """Сменить текущую директорию VFS."""
     if len(args) > ONE_ARG:
         return "Ошибка cd: слишком много аргументов\n"
     target = args[0] if args else "/"
@@ -62,7 +91,7 @@ def exec_cd(vfs, args):
 
 
 def exec_date(args):
-    """Вывод текущей даты и времени."""
+    """Вывести текущую дату и время."""
     if len(args) > EMPTY_COUNT:
         return "Ошибка date: команда не принимает аргументов\n"
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -70,7 +99,7 @@ def exec_date(args):
 
 
 def exec_head(vfs, args):
-    """Вывод первых строк файла."""
+    """Вывести первые строки файла."""
     parsed = _parse_head_args(args)
     if isinstance(parsed, str):
         return parsed
@@ -85,23 +114,34 @@ def exec_head(vfs, args):
 
 
 def _parse_head_args(args):
-    """Разбор аргументов для команды head."""
+    """Разобрать аргументы команды head."""
     if len(args) == ONE_ARG:
         return DEFAULT_HEAD_LINES, args[0]
     if len(args) == THREE_ARGS and args[0] == "-n":
-        if not args[1].isdigit() or int(args[1]) <= EMPTY_COUNT:
-            return "Ошибка head: число строк должно быть положительным числом\n"
-        return int(args[1]), args[2]
+        return _parse_head_count(args[1], args[2])
     return "Ошибка head: неверные аргументы\n"
 
 
+def _parse_head_count(raw_count, path):
+    """Проверить число строк команды head."""
+    if not raw_count.isdigit():
+        return "Ошибка head: число строк должно быть положительным числом\n"
+    count = int(raw_count)
+    if count <= EMPTY_COUNT:
+        return "Ошибка head: число строк должно быть положительным числом\n"
+    return count, path
+
+
 def exec_touch(vfs, args):
-    """Создание нового пустого файла в памяти VFS."""
+    """Создать новый пустой файл в памяти VFS."""
     if len(args) != ONE_ARG:
         return "Ошибка touch: требуется ровно 1 аргумент (путь)\n"
     parent, name = vfs.get_parent_and_name(args[0])
     if not parent or not parent.is_dir:
-        return f"Ошибка touch: родительская папка для '{args[0]}' не найдена\n"
+        return (
+            "Ошибка touch: родительская папка для "
+            f"'{args[0]}' не найдена\n"
+        )
     if not name:
         return "Ошибка touch: некорректное имя файла\n"
     if name not in parent.children:
@@ -110,11 +150,13 @@ def exec_touch(vfs, args):
 
 
 def exec_chmod(vfs, args):
-    """Изменение прав доступа к файлу или папке в памяти VFS."""
+    """Изменить права доступа к файлу или папке в памяти VFS."""
     if len(args) != TWO_ARGS:
         return "Ошибка chmod: требуется 2 аргумента (режим и путь)\n"
-    mode, path = args[0], args[1]
-    if len(mode) != MODE_LEN or not all(c in OCTAL_CHARS for c in mode):
+    mode, path = args
+    if len(mode) != MODE_LEN:
+        return f"Ошибка chmod: неверный формат прав '{mode}'\n"
+    if not all(char in OCTAL_CHARS for char in mode):
         return f"Ошибка chmod: неверный формат прав '{mode}'\n"
     node = vfs.get_node(path)
     if not node:

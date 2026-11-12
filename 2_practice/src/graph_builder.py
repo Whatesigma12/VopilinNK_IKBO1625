@@ -2,77 +2,90 @@
 
 from npm_client import (
     get_dependencies,
-    get_dependencies_for_range
+    get_dependencies_for_range,
 )
 
 
-def build_npm_graph(
-    repository,
-    package,
-    version,
-    max_depth
-):
-    """Построить граф зависимостей реального npm-пакета."""
+class NpmGraphBuilder:
+    """Строитель графа зависимостей npm."""
 
-    graph = {}
-    versions = {}
-    visited_depth = {}
-    active = set()
+    def __init__(self, repository, max_depth):
+        """Сохранить параметры и подготовить состояние обхода."""
+        self.repository = repository
+        self.max_depth = max_depth
+        self.graph = {}
+        self.versions = {}
+        self.visited_depth = {}
+        self.active = set()
 
-    def dfs(name, requirement, depth, root=False):
-        """Рекурсивно обойти одну вершину графа."""
+    def build(self, package, version):
+        """Построить граф от указанного пакета."""
+        self._dfs(package, version, 0, root=True)
+        return self.graph, self.versions
 
-        previous = visited_depth.get(name)
-
-        if previous is not None and previous <= depth:
-            return
-
-        visited_depth[name] = depth
-
+    def _load_dependencies(self, name, requirement, root):
+        """Получить конкретную версию и зависимости вершины."""
         if root:
-            resolved = requirement
             dependencies = get_dependencies(
-                repository,
+                self.repository,
                 name,
-                resolved
+                requirement,
             )
-        else:
-            resolved, dependencies = (
-                get_dependencies_for_range(
-                    repository,
-                    name,
-                    requirement
-                )
-            )
+            return requirement, dependencies
 
-        versions[name] = resolved
-        graph.setdefault(name, [])
+        return get_dependencies_for_range(
+            self.repository,
+            name,
+            requirement,
+        )
 
-        if depth >= max_depth:
+    def _should_skip(self, name, depth):
+        """Проверить, был ли пакет посещён на меньшей глубине."""
+        previous = self.visited_depth.get(name)
+        return previous is not None and previous <= depth
+
+    def _add_edges(self, name, dependencies):
+        """Добавить исходящие рёбра вершины."""
+        for child in dependencies:
+            if child not in self.graph[name]:
+                self.graph[name].append(child)
+            self.graph.setdefault(child, [])
+
+    def _dfs(self, name, requirement, depth, root=False):
+        """Рекурсивно обойти одну вершину графа."""
+        if self._should_skip(name, depth):
             return
 
-        active.add(name)
+        self.visited_depth[name] = depth
+        resolved, dependencies = self._load_dependencies(
+            name,
+            requirement,
+            root,
+        )
+        self.versions[name] = resolved
+        self.graph.setdefault(name, [])
 
-        for child, child_requirement in dependencies.items():
-            if child not in graph[name]:
-                graph[name].append(child)
+        if depth >= self.max_depth:
+            return
 
-            graph.setdefault(child, [])
+        self.active.add(name)
+        self._add_edges(name, dependencies)
+        self._visit_children(dependencies, depth)
+        self.active.remove(name)
 
-            if child not in active:
-                dfs(
-                    child,
-                    child_requirement,
-                    depth + 1
-                )
+    def _visit_children(self, dependencies, depth):
+        """Рекурсивно посетить дочерние зависимости."""
+        for child, requirement in dependencies.items():
+            if child in self.active:
+                continue
+            self._dfs(
+                child,
+                requirement,
+                depth + 1,
+            )
 
-        active.remove(name)
 
-    dfs(
-        package,
-        version,
-        0,
-        root=True
-    )
-
-    return graph, versions
+def build_npm_graph(repository, package, version, max_depth):
+    """Построить граф зависимостей реального npm-пакета."""
+    builder = NpmGraphBuilder(repository, max_depth)
+    return builder.build(package, version)

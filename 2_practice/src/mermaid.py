@@ -3,75 +3,61 @@
 
 def escape_label(value):
     """Подготовить текст для безопасного вывода в Mermaid."""
-
     return str(value).replace('"', '\\"')
 
 
 def collect_nodes(graph):
     """Получить все вершины графа."""
-
     nodes = set(graph)
-
     for dependencies in graph.values():
         nodes.update(dependencies)
-
     return sorted(nodes)
 
 
-def graph_to_mermaid(graph, versions=None):
-    """
-    Преобразовать граф зависимостей в описание Mermaid.
-
-    graph:
-        {
-            "A": ["B", "C"],
-            "B": ["D"]
-        }
-
-    versions:
-        {
-            "express": "4.18.2"
-        }
-    """
-
-    if versions is None:
-        versions = {}
-
-    nodes = collect_nodes(graph)
-
-    # Mermaid удобнее работать с простыми ID:
-    # n0, n1, n2...
-    node_ids = {
+def _build_node_ids(nodes):
+    """Назначить вершинам безопасные идентификаторы."""
+    return {
         package: f"n{index}"
         for index, package in enumerate(nodes)
     }
 
-    lines = [
-        "graph TD"
-    ]
 
-    # Сначала описываем все вершины.
+def _make_label(package, versions):
+    """Сформировать отображаемую подпись вершины."""
+    if package in versions:
+        return f"{package} ({versions[package]})"
+    return package
+
+
+def _build_node_lines(nodes, node_ids, versions):
+    """Сформировать строки объявления вершин Mermaid."""
+    lines = []
     for package in nodes:
-        label = package
-
-        if package in versions:
-            label = (
-                f"{package} "
-                f"({versions[package]})"
-            )
-
-        label = escape_label(label)
-
+        label = escape_label(_make_label(package, versions))
         lines.append(
             f'    {node_ids[package]}["{label}"]'
         )
+    return lines
 
-    # Затем создаём связи между вершинами.
+
+def _build_edge_lines(graph, node_ids):
+    """Сформировать строки рёбер Mermaid."""
+    lines = []
     for package in sorted(graph):
         for dependency in sorted(graph[package]):
             lines.append(
-                f"    {node_ids[package]} "
-                f"--> {node_ids[dependency]}"
+                f"    {node_ids[package]} --> "
+                f"{node_ids[dependency]}"
             )
+    return lines
 
+
+def graph_to_mermaid(graph, versions=None):
+    """Преобразовать граф зависимостей в описание Mermaid."""
+    versions = {} if versions is None else versions
+    nodes = collect_nodes(graph)
+    node_ids = _build_node_ids(nodes)
+    lines = ["graph TD"]
+    lines.extend(_build_node_lines(nodes, node_ids, versions))
+    lines.extend(_build_edge_lines(graph, node_ids))
     return "\n".join(lines)

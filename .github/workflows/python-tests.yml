@@ -23,6 +23,10 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Run unit tests
+      - name: Run practical 1 unit tests
         working-directory: 1_practice
+        run: python -m unittest discover -s tests -v
+
+      - name: Run practical 2 unit tests
+        working-directory: 2_practice
         run: python -m unittest discover -s tests -v
