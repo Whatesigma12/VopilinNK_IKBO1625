@@ -14,6 +14,7 @@ NODE_RADIUS = 14
 FONT_SIZE = 18
 EDGE_WIDTH = 2
 BACK_EDGE_OFFSET = 70
+ROOT_LEVEL = 0
 
 
 def collect_nodes(graph):
@@ -26,7 +27,7 @@ def collect_nodes(graph):
 
 def _indegrees(graph, nodes):
     """Вычислить количество входящих рёбер для каждой вершины."""
-    values = {node: 0 for node in nodes}
+    values = {node: ROOT_LEVEL for node in nodes}
     for dependencies in graph.values():
         for dependency in dependencies:
             values[dependency] += 1
@@ -49,17 +50,21 @@ def _fill_levels(graph, levels, start):
 def _assign_levels(graph, nodes):
     """Назначить вершинам уровни для вертикального расположения."""
     indegrees = _indegrees(graph, nodes)
-    roots = [node for node in nodes if indegrees[node] == 0]
+    roots = [
+        node
+        for node in nodes
+        if indegrees[node] == ROOT_LEVEL
+    ]
     levels = {}
 
     for root in roots:
         if root not in levels:
-            levels[root] = 0
+            levels[root] = ROOT_LEVEL
             _fill_levels(graph, levels, root)
 
     for node in nodes:
         if node not in levels:
-            levels[node] = 0
+            levels[node] = ROOT_LEVEL
             _fill_levels(graph, levels, node)
 
     return levels
@@ -93,7 +98,7 @@ def _positions(levels):
 
 def _canvas_height(levels):
     """Вычислить высоту SVG по количеству уровней."""
-    highest = max(levels.values(), default=0)
+    highest = max(levels.values(), default=ROOT_LEVEL)
     content = TOP_MARGIN + highest * LEVEL_GAP
     return int(content + NODE_HEIGHT + BOTTOM_MARGIN)
 
@@ -184,15 +189,9 @@ def _node_lines(nodes, positions):
     return lines
 
 
-def _header(height, title):
-    """Сформировать начало автономного SVG-документа."""
-    safe_title = escape(title)
+def _svg_defs():
+    """Сформировать блок определений SVG."""
     return [
-        (
-            f'<svg xmlns="http://www.w3.org/2000/svg" '
-            f'width="{CANVAS_WIDTH}" height="{height}" '
-            f'viewBox="0 0 {CANVAS_WIDTH} {height}">'
-        ),
         "  <defs>",
         (
             '    <linearGradient id="nodeGradient" '
@@ -208,6 +207,12 @@ def _header(height, title):
         '      <path d="M 0 0 L 10 4 L 0 8 z" fill="#365f9d" />',
         "    </marker>",
         "  </defs>",
+    ]
+
+
+def _svg_styles():
+    """Сформировать стили SVG."""
+    return [
         "  <style>",
         '    .background { fill: #f7f9fc; }',
         (
@@ -230,6 +235,18 @@ def _header(height, title):
             'font-weight: 700; text-anchor: middle; }'
         ),
         "  </style>",
+    ]
+
+
+def _svg_opening(height, title):
+    """Сформировать открывающие элементы SVG."""
+    safe_title = escape(title)
+    return [
+        (
+            f'<svg xmlns="http://www.w3.org/2000/svg" '
+            f'width="{CANVAS_WIDTH}" height="{height}" '
+            f'viewBox="0 0 {CANVAS_WIDTH} {height}">'
+        ),
         (
             f'  <rect class="background" x="0" y="0" '
             f'width="{CANVAS_WIDTH}" height="{height}" />'
@@ -238,8 +255,18 @@ def _header(height, title):
             f'  <text class="title" x="{CANVAS_WIDTH / 2:.1f}" '
             f'y="38">{safe_title}</text>'
         ),
-        '  <g class="edges">',
     ]
+
+
+def _header(height, title):
+    """Сформировать начало автономного SVG-документа."""
+    opening = _svg_opening(height, title)
+    lines = [opening[0]]
+    lines.extend(_svg_defs())
+    lines.extend(_svg_styles())
+    lines.extend(opening[1:])
+    lines.append('  <g class="edges">')
+    return lines
 
 
 def graph_to_svg(graph, title="Dependency graph"):
