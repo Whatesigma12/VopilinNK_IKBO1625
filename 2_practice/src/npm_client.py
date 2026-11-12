@@ -1,43 +1,35 @@
+"""Получение информации о пакетах из npm Registry."""
+
 import json
+
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
 
+from semver import choose_version
+
 
 class NpmClientError(Exception):
-    """Ошибка при получении данных из npm Registry."""
+    """Ошибка получения данных из npm Registry."""
 
 
-def build_package_url(repository, package, version):
-    """
-    Создаёт URL для получения информации
-    о конкретной версии npm-пакета.
-    """
+def build_package_url(repository, package, version=None):
+    """Создать URL npm Registry."""
 
-    # Удаляем возможный / в конце адреса репозитория.
     repository = repository.rstrip("/")
-
-    # Кодируем имя пакета для безопасной передачи в URL.
-    # Это особенно важно для scoped-пакетов:
-    # например @babel/core.
     encoded_package = quote(package, safe="")
 
-    return f"{repository}/{encoded_package}/{version}"
+    if version is None:
+        return f"{repository}/{encoded_package}"
 
-
-def fetch_package_metadata(repository, package, version):
-    """
-    Получает JSON с информацией о пакете
-    из npm Registry.
-    """
-
-    url = build_package_url(
-        repository,
-        package,
-        version
+    return (
+        f"{repository}/{encoded_package}/{version}"
     )
 
-    # Создаём HTTP-запрос.
+
+def load_json(url):
+    """Получить JSON по указанному URL."""
+
     request = Request(
         url,
         headers={
@@ -47,54 +39,79 @@ def fetch_package_metadata(repository, package, version):
     )
 
     try:
-        # Отправляем запрос.
         with urlopen(request, timeout=10) as response:
-
-            # Получаем байты и превращаем их в текст.
             data = response.read().decode("utf-8")
-
     except HTTPError as error:
-
-        if error.code == 404:
-            raise NpmClientError(
-                f"Пакет '{package}' версии '{version}' не найден"
-            )
-
         raise NpmClientError(
-            f"HTTP-ошибка npm Registry: {error.code}"
-        )
-
+            f"HTTP-ошибка: {error.code}"
+        ) from error
     except URLError as error:
         raise NpmClientError(
-            f"Не удалось подключиться к npm Registry: {error.reason}"
-        )
-
-    except TimeoutError:
-        raise NpmClientError(
-            "Превышено время ожидания ответа npm Registry"
-        )
+            f"Ошибка подключения: {error.reason}"
+        ) from error
 
     try:
-        # Преобразуем JSON-текст в Python-словарь.
         return json.loads(data)
-
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as error:
         raise NpmClientError(
-            "npm Registry вернул некорректный JSON"
+            "Получен некорректный JSON"
+        ) from error
+
+
+def fetch_package_metadata(repository, package, version):
+    """Получить данные конкретной версии пакета."""
+
+    url = build_package_url(
+        repository,
+        package,
+        version
+    )
+
+    return load_json(url)
+
+
+def fetch_package_document(repository, package):
+    """Получить документ со всеми версиями пакета."""
+
+    url = build_package_url(
+        repository,
+        package
+    )
+
+    return load_json(url)
+
+
+def resolve_version(repository, package, requirement):
+    """Преобразовать диапазон npm в конкретную версию."""
+
+    document = fetch_package_document(
+        repository,
+        package
+    )
+
+    versions = document.get(
+        "versions",
+        {}
+    )
+
+    if requirement in versions:
+        return requirement
+
+    selected = choose_version(
+        versions.keys(),
+        requirement
+    )
+
+    if selected is None:
+        raise NpmClientError(
+            f"Не найдена версия {package} для {requirement}"
         )
+
+    return selected
 
 
 def get_dependencies(repository, package, version):
-    """
-    Возвращает прямые зависимости указанной версии пакета.
-
-    Результат:
-    {
-        "accepts": "~1.3.8",
-        "array-flatten": "1.1.1",
-        ...
-    }
-    """
+    """Получить прямые зависимости конкретной версии."""
 
     metadata = fetch_package_metadata(
         repository,
@@ -107,9 +124,29 @@ def get_dependencies(repository, package, version):
         {}
     )
 
-    # Иногда поле dependencies может отсутствовать.
-    # В этом случае просто возвращаем пустой словарь.
     if not isinstance(dependencies, dict):
         return {}
 
     return dependencies
+
+
+def get_dependencies_for_range(
+    repository,
+    package,
+    requirement
+):
+    """Получить версию и зависимости по npm-диапазону."""
+
+    version = resolve_version(
+        repository,
+        package,
+        requirement
+    )
+
+    dependencies = get_dependencies(
+        repository,
+        package,
+        version
+    )
+
+    return version, dependencies
