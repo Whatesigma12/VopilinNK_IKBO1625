@@ -1,6 +1,6 @@
 """Генерация автономных SVG-схем графа зависимостей."""
 
-from collections import defaultdict, deque
+from collections import defaultdict
 from html import escape
 
 CANVAS_WIDTH = 960
@@ -34,17 +34,20 @@ def _indegrees(graph, nodes):
     return values
 
 
-def _fill_levels(graph, levels, start):
-    """Заполнить уровни BFS от одной стартовой вершины."""
-    queue = deque([start])
-    while queue:
-        node = queue.popleft()
-        next_level = levels[node] + 1
-        for child in graph.get(node, []):
-            if child in levels:
-                continue
-            levels[child] = next_level
-            queue.append(child)
+def _fill_levels(graph, levels, node, level):
+    """Рекурсивно назначить уровни вершинам графа."""
+    previous = levels.get(node)
+    if previous is not None and previous <= level:
+        return
+
+    levels[node] = level
+    for child in graph.get(node, []):
+        _fill_levels(
+            graph,
+            levels,
+            child,
+            level + 1,
+        )
 
 
 def _assign_levels(graph, nodes):
@@ -58,14 +61,21 @@ def _assign_levels(graph, nodes):
     levels = {}
 
     for root in roots:
-        if root not in levels:
-            levels[root] = ROOT_LEVEL
-            _fill_levels(graph, levels, root)
+        _fill_levels(
+            graph,
+            levels,
+            root,
+            ROOT_LEVEL,
+        )
 
     for node in nodes:
         if node not in levels:
-            levels[node] = ROOT_LEVEL
-            _fill_levels(graph, levels, node)
+            _fill_levels(
+                graph,
+                levels,
+                node,
+                ROOT_LEVEL,
+            )
 
     return levels
 
